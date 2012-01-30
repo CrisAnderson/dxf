@@ -32,12 +32,6 @@ datz = 60 #down aisle tie height
 daty = 20 #down aisle tie width
 lift = 140 #lift off gap
 
-def createblock(bname, x,y,z):
-    '''Block adding boilerplate-pass it the name of the block as a string and where to stick it.'''
-    block = dxf.block(name=bname)
-    dwg.blocks.add(block)
-    blockref = dxf.insert(blockname=bname, insert=(x,y,z))
-
 def blockfaces(bname, x,y,z, lx, ly, lz):
     '''This function takes the block name that the faces will be added to, an xyz of the cube itself, and an xyz for location'''
     # create 3dfaces for cube
@@ -56,10 +50,8 @@ def blockfaces(bname, x,y,z, lx, ly, lz):
     bname.add(face5)
     bname.add(face6)
 
-
 # create the various components
-# pallets
-#createblock('pallet', 0,0,0)
+##### Pallets
 pallet = dxf.block(name='pallet')
 dwg.blocks.add(pallet)
 blockfaces(pallet, palx, paly, palz, 0, 0, 0)
@@ -87,7 +79,7 @@ for m in range(levels):
                 blockref = dxf.insert(blockname='pallet', insert=((j*(loadx+palgap)+upx+upgap)+blength,0-(aislew/2)-loady+aisle2,lapproach+lh))
                 dwg.add(blockref)
 
-# Uprights
+##### Uprights
 upright = dxf.block(name='upright')
 dwg.blocks.add(upright)
 # calculate upright height
