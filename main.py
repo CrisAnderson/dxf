@@ -16,8 +16,8 @@ backgap = 300 #back to back pallet gap
 palx = 1016 #pallet width
 paly = 1220 #pallet length
 palz = 144 #pallet height
-loadx = palx #1016 #load width --- logic to pick the bigger of the two not implemented yet
-loady = paly #1220 #load length
+loadx = 1116 #load width
+loady = 1320 #load length
 loadz = 1500 #load height (excluding pallet)
 palgap = 70 #gap between pallets
 upgap = 80 #gap between load and upright
@@ -31,6 +31,11 @@ lift = 140 #lift off gap
 # get name for file, setup the dxf file
 fname = raw_input('What to name this dxf? ') + '.dxf'
 dwg = dxf.drawing(fname)
+
+# set up layer scheme
+dwg.add_layer('CLT_RAK_Pallet_Rack', color=94)
+dwg.add_layer('CLT_PLT_Load')
+dwg.add_layer('CLT_PLT_Pallet', color=3)
 
 def blockfaces(bname, x,y,z, lx, ly, lz):
     '''This function takes the block name that the faces will be added to, an xyz of the cube itself, and an xyz for location'''
@@ -50,6 +55,17 @@ def blockfaces(bname, x,y,z, lx, ly, lz):
     bname.add(face5)
     bname.add(face6)
 
+# figure out which is larger out of the pallet/load and use that for calculations
+if loadx > palx:
+    maxx = loadx
+else:
+    maxx = palx
+    
+if loady > paly:
+    maxy = loady
+else:
+    maxy = paly
+    
 # create the various components
 ##### Pallets
 pallet = dxf.block(name='pallet')
@@ -63,20 +79,20 @@ for m in range(levels):
     # Outer loop to create all the aisles
     for l in range(aisles):
         # Calc distance between aisles
-        aislewidth = (2 * paly) + aislew + backgap
+        aislewidth = (2 * maxy) + aislew + backgap
         aisle2 = aislewidth * l
         # Inner loop to create one aisle
         for k in range(bays):
             # calculate bay length
-            blen = upx + ((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)
+            blen = upx + ((bay - 1) * upgap) + (bay * maxx) + ((bay - 1) * palgap)
             blength = blen * k
             # create first bay
             for i in range(bay):
-                blockref = dxf.insert(blockname='pallet', insert=((i*(loadx+palgap)+upx+upgap)+blength,(aislew/2)+aisle2,lapproach+lh))
+                blockref = dxf.insert(blockname='pallet', layer='CLT_PLT_Pallet', insert=(upx+upgap+(maxx/2)-(palx/2)+(i*(maxx + palgap))+blength,(aislew/2)+(maxy/2)-(paly/2)+aisle2,lapproach+lh))
                 dwg.add(blockref)
             # create opposite side
             for j in range(bay):
-                blockref = dxf.insert(blockname='pallet', insert=((j*(loadx+palgap)+upx+upgap)+blength,0-(aislew/2)-loady+aisle2,lapproach+lh))
+                blockref = dxf.insert(blockname='pallet', layer='CLT_PLT_Pallet', insert=(upx+upgap+(maxx/2)-(palx/2)+(j*(maxx + palgap))+blength,0-(aislew/2)-(maxy/2)-(paly/2)+aisle2,lapproach+lh))
                 dwg.add(blockref)
 
 ##### Loads
@@ -91,20 +107,20 @@ for m in range(levels):
     # Outer loop to create all the aisles
     for l in range(aisles):
         # Calc distance between aisles
-        aislewidth = (2 * paly) + aislew + backgap
+        aislewidth = (2 * maxy) + aislew + backgap
         aisle2 = aislewidth * l
         # Inner loop to create one aisle
         for k in range(bays):
             # calculate bay length
-            blen = upx + ((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)
+            blen = upx + ((bay - 1) * upgap) + (bay * maxx) + ((bay - 1) * palgap)
             blength = blen * k
             # create first bay
             for i in range(bay):
-                blockref = dxf.insert(blockname='load', insert=((i*(loadx+palgap)+upx+upgap)+blength,(aislew/2)+aisle2,lapproach+lh+palz))
+                blockref = dxf.insert(blockname='load', layer='CLT_PLT_Load', insert=(upx+upgap+(maxx/2)-(loadx/2)+(i*(maxx + palgap))+blength,(aislew/2)+(maxy/2)-(loady/2)+aisle2,lapproach+lh+palz))
                 dwg.add(blockref)
             # create opposite side
             for j in range(bay):
-                blockref = dxf.insert(blockname='load', insert=((j*(loadx+palgap)+upx+upgap)+blength,0-(aislew/2)-loady+aisle2,lapproach+lh+palz))
+                blockref = dxf.insert(blockname='load', layer='CLT_PLT_Load', insert=(upx+upgap+(maxx/2)-(loadx/2)+(j*(maxx + palgap))+blength,0-(aislew/2)-(maxy/2)-(loady/2)+aisle2,lapproach+lh+palz))
                 dwg.add(blockref)
                 
                 
@@ -117,31 +133,31 @@ blockfaces(upright, upx, upy, upz, 0, 0, 0)
 # Outer loop to create all the aisles
 for l in range(aisles):
     # Calc distance between aisles
-    aislewidth = (2 * paly) + aislew + backgap
+    aislewidth = (2 * maxy) + aislew + backgap
     aisle2 = aislewidth * l
     # Inner loop to create one aisle
     for k in range(bays+1):
         # calculate bay length
-        blen = upx + ((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)
+        blen = upx + ((bay - 1) * upgap) + (bay * maxx) + ((bay - 1) * palgap)
         blength = blen * k
         # create inner upright
-        blockref1 = dxf.insert(blockname='upright', insert=((blength,(aislew/2)+(loady/2)+(up2up/2)+aisle2, 0)))
+        blockref1 = dxf.insert(blockname='upright', layer='CLT_RAK_Pallet_Rack', insert=((blength,(aislew/2)+(maxy/2)+(up2up/2)+aisle2, 0)))
         dwg.add(blockref1)
         # create outer upright
-        blockref2 = dxf.insert(blockname='upright', insert=((blength,(aislew/2)+(loady/2)-(up2up/2)-upy+aisle2, 0)))
+        blockref2 = dxf.insert(blockname='upright', layer='CLT_RAK_Pallet_Rack', insert=((blength,(aislew/2)+(maxy/2)-(up2up/2)-upy+aisle2, 0)))
         dwg.add(blockref2)
         # create inner upright (opposite)
-        blockref1 = dxf.insert(blockname='upright', insert=((blength,0-(aislew/2)-(loady/2)+(up2up/2)+aisle2, 0)))
+        blockref1 = dxf.insert(blockname='upright', layer='CLT_RAK_Pallet_Rack', insert=((blength,0-(aislew/2)-(maxy/2)+(up2up/2)+aisle2, 0)))
         dwg.add(blockref1)
         # create outer upright (opposite)
-        blockref2 = dxf.insert(blockname='upright', insert=((blength,0-(aislew/2)-(loady/2)-(up2up/2)-upy+aisle2, 0)))
+        blockref2 = dxf.insert(blockname='upright', layer='CLT_RAK_Pallet_Rack', insert=((blength,0-(aislew/2)-(maxy/2)-(up2up/2)-upy+aisle2, 0)))
         dwg.add(blockref2)
 
 ##### Down Aisle Ties
 tie = dxf.block(name='tie')
 dwg.blocks.add(tie)
 # calculate tie length
-datx = ((bays + 1) * upx) + (bays * (((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)))
+datx = ((bays + 1) * upx) + (bays * (((bay - 1) * upgap) + (bay * maxx) + ((bay - 1) * palgap)))
 blockfaces(tie, datx, daty, datz, 0, 0, 0)
 # Create ties for all levels
 for m in range(levels):
@@ -150,19 +166,19 @@ for m in range(levels):
     # Outer loop to create all the aisles
     for l in range(aisles):
         # Calc distance between aisles
-        aislewidth = (2 * paly) + aislew + backgap
+        aislewidth = (2 * maxy) + aislew + backgap
         aisle2 = aislewidth * l
         # create outer tie
-        blockref1 = dxf.insert(blockname='tie', insert=((0,(aislew/2)+(loady/2)+(up2up/2)+upy+aisle2, lapproach-datz+lh)))
+        blockref1 = dxf.insert(blockname='tie', layer='CLT_RAK_Pallet_Rack', insert=((0,(aislew/2)+(maxy/2)+(up2up/2)+upy+aisle2, lapproach-datz+lh)))
         dwg.add(blockref1)
         # create inter tie
-        blockref2 = dxf.insert(blockname='tie', insert=((0,(aislew/2)+(loady/2)-(up2up/2)-upy-daty+aisle2, lapproach-datz+lh)))
+        blockref2 = dxf.insert(blockname='tie', layer='CLT_RAK_Pallet_Rack', insert=((0,(aislew/2)+(maxy/2)-(up2up/2)-upy-daty+aisle2, lapproach-datz+lh)))
         dwg.add(blockref2)
         # create outer tie (opposite)
-        blockref1 = dxf.insert(blockname='tie', insert=((0,0-(aislew/2)-(loady/2)-(up2up/2)-upy-daty+aisle2, lapproach-datz+lh)))
+        blockref1 = dxf.insert(blockname='tie', layer='CLT_RAK_Pallet_Rack', insert=((0,0-(aislew/2)-(maxy/2)-(up2up/2)-upy-daty+aisle2, lapproach-datz+lh)))
         dwg.add(blockref1)
         # create inter tie (opposite)
-        blockref2 = dxf.insert(blockname='tie', insert=((0,0-(aislew/2)-(loady/2)+(up2up/2)+upy+aisle2, lapproach-datz+lh)))
+        blockref2 = dxf.insert(blockname='tie', layer='CLT_RAK_Pallet_Rack', insert=((0,0-(aislew/2)-(maxy/2)+(up2up/2)+upy+aisle2, lapproach-datz+lh)))
         dwg.add(blockref2)
 
 dwg.save()
