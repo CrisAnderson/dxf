@@ -1,6 +1,3 @@
 Rack script todo:
 
-layers-done?
-load/pallet logic
-double deep
 upper approach logic
