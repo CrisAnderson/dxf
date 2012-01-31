@@ -1,16 +1,12 @@
 #!/usr/bin/python
 from dxfwrite import DXFEngine as dxf
 
-# get name, setup the dxf file
-fname = raw_input('What to name this dxf? ') + '.dxf'
-dwg = dxf.drawing(fname)
-
 # rack configuration variables
 deep = 1 #single deep
 bay = 3 #pallets per bay
 bays = 10 #length in bays
 aisles = 5 #number of aisles
-levels = 5 #loads in y
+levels = 10 #loads in y
 lapproach = 830 #lower approach of the exyz crane
 uapproach = 410 #upper approach min
 aislew = 1500 #width of aisle
@@ -28,9 +24,13 @@ upgap = 80 #gap between load and upright
 upx = 100 #upright width in the x direction
 upy = 100 #in the y (z when considering HBW as a whole)
 up2up = 800 #width between uprights (looking down aisle)
-datz = 60 #down aisle tie height
-daty = 20 #down aisle tie width
+datz = 220 #down aisle tie height
+daty = 60 #down aisle tie width
 lift = 140 #lift off gap
+
+# get name for file, setup the dxf file
+fname = raw_input('What to name this dxf? ') + '.dxf'
+dwg = dxf.drawing(fname)
 
 def blockfaces(bname, x,y,z, lx, ly, lz):
     '''This function takes the block name that the faces will be added to, an xyz of the cube itself, and an xyz for location'''
@@ -68,7 +68,7 @@ for m in range(levels):
         # Inner loop to create one aisle
         for k in range(bays):
             # calculate bay length
-            blen = upx + (2 * upgap) + (3 * loadx) + (2 * palgap)
+            blen = upx + ((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)
             blength = blen * k
             # create first bay
             for i in range(bay):
@@ -79,6 +79,35 @@ for m in range(levels):
                 blockref = dxf.insert(blockname='pallet', insert=((j*(loadx+palgap)+upx+upgap)+blength,0-(aislew/2)-loady+aisle2,lapproach+lh))
                 dwg.add(blockref)
 
+##### Loads
+load = dxf.block(name='load')
+dwg.blocks.add(load)
+blockfaces(load, loadx, loady, loadz, 0, 0, 0)
+
+# Outermost loop for creating levels
+for m in range(levels):
+    levelheight = datz + palz + loadz + lift
+    lh = levelheight * m
+    # Outer loop to create all the aisles
+    for l in range(aisles):
+        # Calc distance between aisles
+        aislewidth = (2 * paly) + aislew + backgap
+        aisle2 = aislewidth * l
+        # Inner loop to create one aisle
+        for k in range(bays):
+            # calculate bay length
+            blen = upx + ((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)
+            blength = blen * k
+            # create first bay
+            for i in range(bay):
+                blockref = dxf.insert(blockname='load', insert=((i*(loadx+palgap)+upx+upgap)+blength,(aislew/2)+aisle2,lapproach+lh+palz))
+                dwg.add(blockref)
+            # create opposite side
+            for j in range(bay):
+                blockref = dxf.insert(blockname='load', insert=((j*(loadx+palgap)+upx+upgap)+blength,0-(aislew/2)-loady+aisle2,lapproach+lh+palz))
+                dwg.add(blockref)
+                
+                
 ##### Uprights
 upright = dxf.block(name='upright')
 dwg.blocks.add(upright)
@@ -93,7 +122,7 @@ for l in range(aisles):
     # Inner loop to create one aisle
     for k in range(bays+1):
         # calculate bay length
-        blen = upx + (2 * upgap) + (3 * loadx) + (2 * palgap)
+        blen = upx + ((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)
         blength = blen * k
         # create inner upright
         blockref1 = dxf.insert(blockname='upright', insert=((blength,(aislew/2)+(loady/2)+(up2up/2)+aisle2, 0)))
@@ -106,6 +135,34 @@ for l in range(aisles):
         dwg.add(blockref1)
         # create outer upright (opposite)
         blockref2 = dxf.insert(blockname='upright', insert=((blength,0-(aislew/2)-(loady/2)-(up2up/2)-upy+aisle2, 0)))
+        dwg.add(blockref2)
+
+##### Down Aisle Ties
+tie = dxf.block(name='tie')
+dwg.blocks.add(tie)
+# calculate tie length
+datx = ((bays + 1) * upx) + (bays * (((bay - 1) * upgap) + (bay * loadx) + ((bay - 1) * palgap)))
+blockfaces(tie, datx, daty, datz, 0, 0, 0)
+# Create ties for all levels
+for m in range(levels):
+    levelheight = datz + palz + loadz + lift
+    lh = levelheight * m
+    # Outer loop to create all the aisles
+    for l in range(aisles):
+        # Calc distance between aisles
+        aislewidth = (2 * paly) + aislew + backgap
+        aisle2 = aislewidth * l
+        # create outer tie
+        blockref1 = dxf.insert(blockname='tie', insert=((0,(aislew/2)+(loady/2)+(up2up/2)+upy+aisle2, lapproach-datz+lh)))
+        dwg.add(blockref1)
+        # create inter tie
+        blockref2 = dxf.insert(blockname='tie', insert=((0,(aislew/2)+(loady/2)-(up2up/2)-upy-daty+aisle2, lapproach-datz+lh)))
+        dwg.add(blockref2)
+        # create outer tie (opposite)
+        blockref1 = dxf.insert(blockname='tie', insert=((0,0-(aislew/2)-(loady/2)-(up2up/2)-upy-daty+aisle2, lapproach-datz+lh)))
+        dwg.add(blockref1)
+        # create inter tie (opposite)
+        blockref2 = dxf.insert(blockname='tie', insert=((0,0-(aislew/2)-(loady/2)+(up2up/2)+upy+aisle2, lapproach-datz+lh)))
         dwg.add(blockref2)
 
 dwg.save()
