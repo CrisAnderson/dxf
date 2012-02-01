@@ -2,4 +2,6 @@ Rack script todo:
 
 upper approach logic
 variable load heights
-
+GUI
+Sizing
+2D layouts
