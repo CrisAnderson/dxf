@@ -1,3 +1,5 @@
 Rack script todo:
 
 upper approach logic
+variable load heights
+
